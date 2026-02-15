@@ -29,7 +29,7 @@ public:
     void bind(InetAddress* server_addr);
     void listen();
     void setNonblocking();
-    int accept(struct sockaddr_in* client_addr, socklen_t* client_addr_len);
+    int accept(InetAddress* _addr);
     int get_fd() const;
 };
 

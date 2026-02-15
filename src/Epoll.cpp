@@ -20,13 +20,13 @@ Epoll::~Epoll() {
 }
 
 // 将文件描述符fd添加到epoll实例中，监听events指定的事件
-void Epoll::add_fd(int fd, uint32_t events) {
-    struct epoll_event ev;
-    bzero(&ev, sizeof(ev));
-    ev.data.fd = fd;
-    ev.events = events;
-    errif(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll_ctl add error");
-}
+// void Epoll::add_fd(int fd, uint32_t events) {
+//     struct epoll_event ev;
+//     bzero(&ev, sizeof(ev));
+//     ev.data.fd = fd;
+//     ev.events = events;
+//     errif(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1, "epoll_ctl add error");
+// }
 
 // 返回就绪的事件列表
 std::vector<Channel*> Epoll::poll(int timeout) {

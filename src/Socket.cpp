@@ -13,10 +13,15 @@ void Socket::setNonblocking() {
     fcntl(fd, F_SETFL, fcntl(this->fd, F_GETFL) | O_NONBLOCK);
 }
 
-int Socket::accept(struct sockaddr_in* client_addr, socklen_t* client_addr_len) {
-    int client_sockfd = ::accept(fd, (struct sockaddr*)client_addr, client_addr_len);
-    errif(client_sockfd == -1, "accept error");
-    return client_sockfd;
+int Socket::accept(InetAddress* _addr) {
+    struct sockaddr_in addr;
+    socklen_t addr_len = sizeof(addr);
+    bzero(&addr, sizeof(addr));
+
+    int clnt_sockfd = ::accept(fd, (struct sockaddr*)&addr, &addr_len);
+    errif(clnt_sockfd == -1, "accept error");
+    _addr->setInetAddr(addr, addr_len);
+    return clnt_sockfd;
 }
 
 int Socket::get_fd() const {

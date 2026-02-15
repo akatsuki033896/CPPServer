@@ -3,19 +3,17 @@
 #include <functional>
 class EventLoop;
 class Socket;
-class InetAddress;
 class Channel;
 
-// 对于所有的服务，都要使用Acceptor来建立连接，Acceptor本身并不知道是哪种服务
+// 对于所有的服务，都要使用Acceptor来建立连接，Acceptor本身并不知道是哪种服务， Acceptor 只有一个用于接受连接
 class Acceptor {
     EventLoop *loop;
-    Socket *sock;
-    InetAddress *addr;
-    Channel *accept_channel;
+    Socket *sock = nullptr;
+    Channel *accept_channel = nullptr;
+    std::function<void(Socket*)> newConnectionCallBack;
 public:
     Acceptor(EventLoop *_loop);
     ~Acceptor();
-    std::function<void(Socket*)> newConnectionCallBack;
     void acceptConnection();
-    void setNewConnectionCallBack(std::function<void(Socket*)>);
+    void setNewConnectionCallBack(std::function<void(Socket*)> cb);
 };
