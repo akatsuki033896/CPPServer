@@ -5,7 +5,10 @@
 #include <vector>
 #include <cstring>
 
+
 #define MAX_EVENTS 10000
+
+class Channel;
 
 class Epoll {
     int epfd = -1;
@@ -27,5 +30,6 @@ public:
     }
     
     void add_fd(int fd, uint32_t events);
-    std::vector<struct epoll_event> poll(int timeout = -1);
+    std::vector<struct Channel*> poll(int timeout = -1);
+    void updateChannel(Channel* channel);
 };
