@@ -1,4 +1,5 @@
-#include "../include/Socket.hpp"
+#include "Socket.hpp"
+#include "InetAddress.hpp"
 
 void Socket::bind(InetAddress* server_addr) {
     errif(::bind(fd, (struct sockaddr*)&server_addr->addr, server_addr->addr_len) == -1, "bind error");
@@ -8,7 +9,7 @@ void Socket::listen() {
     errif(::listen(fd, SOMAXCONN) < 0, "listen error");
 }
 
-void Socket::set_nonblocking() {
+void Socket::setNonblocking() {
     fcntl(fd, F_SETFL, fcntl(this->fd, F_GETFL) | O_NONBLOCK);
 }
 

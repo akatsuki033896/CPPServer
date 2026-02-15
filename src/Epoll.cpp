@@ -1,8 +1,23 @@
-#include "../include/Epoll.hpp"
-#include "../include/util.hpp"
+#include "Epoll.hpp"
+#include "util.hpp"
 #include <sys/epoll.h>
 #include <vector>
-#include "../include/Channel.hpp"
+#include "Channel.hpp"
+
+Epoll::Epoll() {
+    epfd = epoll_create1(0);
+    errif(epfd == -1, "epoll create error");
+    events = new struct epoll_event[MAX_EVENTS];
+    bzero(events, sizeof(*events) * MAX_EVENTS);
+}
+
+Epoll::~Epoll() {
+    if (epfd != -1) {
+        close(epfd);
+        epfd = -1;
+    }
+    delete[] events;
+}
 
 // 将文件描述符fd添加到epoll实例中，监听events指定的事件
 void Epoll::add_fd(int fd, uint32_t events) {
@@ -15,16 +30,15 @@ void Epoll::add_fd(int fd, uint32_t events) {
 
 // 返回就绪的事件列表
 std::vector<Channel*> Epoll::poll(int timeout) {
-    std::vector<Channel*> activeEvents;
+    std::vector<Channel*> activeChannels;
     int nfds = epoll_wait(epfd, events, MAX_EVENTS, timeout);
     errif(nfds == -1, "epoll wait error");
-    
     for (int i = 0; i < nfds; i++) {
         Channel *ch = (Channel*)events[i].data.ptr;
         ch->setRevents(events[i].events);
-        activeEvents.push_back(ch);
+        activeChannels.push_back(ch);
     }
-    return activeEvents;
+    return activeChannels;
 }
 
 void Epoll::updateChannel(Channel* channel) {

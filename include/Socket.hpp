@@ -1,11 +1,11 @@
 #pragma once
 
 #include <unistd.h>
-#include "InetAddress.hpp"
 #include <fcntl.h>
 #include <sys/socket.h>
 #include "util.hpp"
 
+class InetAddress;
 
 class Socket {
     int fd = -1;
@@ -28,7 +28,7 @@ public:
 
     void bind(InetAddress* server_addr);
     void listen();
-    void set_nonblocking();
+    void setNonblocking();
     int accept(struct sockaddr_in* client_addr, socklen_t* client_addr_len);
     int get_fd() const;
 };
