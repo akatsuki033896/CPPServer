@@ -3,22 +3,26 @@
 #include "Socket.hpp"
 #include "InetAddress.hpp"
 #include "Channel.hpp"
+#include "Acceptor.hpp"
 #include <functional>
 #include <iostream>
 #include <format>
 
 Server::Server(EventLoop *_loop) : loop(_loop) {
-    Socket *serv_sock = new Socket();
-    InetAddress *serv_addr = new InetAddress("127.0.0.1", 8888);
-    serv_sock->bind(serv_addr);
-    serv_sock->listen();
-    std::cout << "Server listening on 127.0.0.1:8888" << '\n';
-    serv_sock->setNonblocking();
+    acceptor = new Acceptor(loop);
+    // std::function<void(Socket*)> cb = std::bind(&Server::newConnection, this, std::placeholders::_1);
+    // std::placeholders::_1 占位，未来调用这个回调函数时，第一个参数会被传给 newConnection
+    
+    // 创建一个函数对象，被调用时执行 this->newConnection(sock);
+    acceptor->setNewConnectionCallBack(
+        [this] (Socket *sock) {
+            this->newConnection(sock);
+        }
+    );
+}
 
-    Channel *serv_channel = new Channel(loop, serv_sock->get_fd());
-    std::function<void()> cb = std::bind(&Server::newConnection, this, serv_sock);
-    serv_channel->setCallback(cb);
-    serv_channel->enableReading(); // 监听socket的Channel只需要关注可读事件
+Server::~Server() {
+    delete acceptor;
 }
 
 void Server::handleReadEvent(int sockfd) {

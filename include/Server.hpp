@@ -3,9 +3,11 @@
 
 class EventLoop;
 class Socket;
+class Acceptor;
 
 class Server {
     EventLoop *loop;
+    Acceptor *acceptor = nullptr;
 public:
     Server(EventLoop *_loop);
     ~Server();
@@ -14,4 +16,4 @@ public:
     void newConnection(Socket *serv_sock); // 处理新连接的函数，创建一个新的Channel对象并将其添加到事件循环中
 };
 
-// Dependencies: Channel -> Epoll -> EventLoop
+// Dependencies: Channel -> Epoll -> EventLoop -> Server
