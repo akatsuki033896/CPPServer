@@ -1,53 +1,64 @@
+#include <cstdlib>
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
-#include "util.hpp"
+#include <format>
+#include "InetAddress.hpp"
+#include "Buffer.hpp"
+#include "Socket.hpp"
 
 #define BUFFER_SIZE 1024
 
 int main() {
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0); // TCP socket
-    errif(sockfd == -1, "socket create error");
+    Socket *sock = new Socket();
+    InetAddress *addr = new InetAddress("127.0.0.1", 8888);
+    sock->connect(addr);
 
-    struct sockaddr_in server_addr;
-    bzero(&server_addr, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server_addr.sin_port = htons(8888);
+    int sockfd = sock->get_fd();
 
-    errif(connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1, "connect error");
+    Buffer *sendBuffer = new Buffer();
+    Buffer *readBuffer = new Buffer();
 
     while (true) {
-        char buf[BUFFER_SIZE];
-        bzero(&buf, sizeof(buf));
         std::cout << "Enter message to send (type 'q' to quit): ";
-        std::cin.getline(buf, sizeof(buf)); // 从标准输入读取一行数据到缓冲区
-        ssize_t write_bytes = write(sockfd, buf, sizeof(buf)); // 将缓冲区数据写入socket
-        if (strcmp(buf, "q") == 0) {
+        sendBuffer->getline(); // 从标准输入读取一行数据到缓冲区
+        ssize_t write_bytes = write(sockfd, sendBuffer->c_str(), sendBuffer->size()); // 将缓冲区数据写入socket
+        if (strcmp(sendBuffer->c_str(), "q") == 0) {
             break;
         }
-        if (write_bytes < 0) {
-            errif(write_bytes < 0, "write error");
+        if (write_bytes == -1) {
+            std::cout << "Socket already disconnected." << '\n';
             break;
         }
-        
-        bzero(&buf, sizeof(buf));
-        ssize_t read_bytes = read(sockfd, buf, sizeof(buf)); // 从socket读取数据到缓冲区，返回已读数据大小
-        if (read_bytes > 0) {
-            std::cout << "Received from server: " << buf << '\n';
+
+        int already_read = 0;
+        char buf[BUFFER_SIZE];
+        while (true) {
+            bzero(&buf, sizeof(buf));
+            ssize_t read_bytes = read(sockfd, buf, sizeof(buf)); // 从socket读取数据到缓冲区，返回已读数据大小
+            if (read_bytes > 0) {
+                readBuffer->append(buf, read_bytes);
+                already_read += read_bytes;
+                std::cout << "Received from server: " << buf << '\n';
+            }
+            else if (read_bytes == 0) {
+                std::cout << "Server closed the connection." << '\n';
+                exit(EXIT_SUCCESS);
+            } // EOF
+            
+            if (already_read >= sendBuffer->size()) {
+                std::cout << std::format("Message from server: {}", readBuffer->c_str()) << '\n';
+                break;
+            }
         }
-        else if (read_bytes == 0) {
-            std::cout << "Server closed the connection." << '\n';
-            break;
-        } // EOF
-        else if (read_bytes == -1) {
-            close(sockfd);
-            errif(read_bytes == -1, "read error");
-            break;
-        }
+        readBuffer->clear();
     }
-    close(sockfd);
+    
+    delete sendBuffer;
+    delete readBuffer;
+    delete addr;
+    delete sock;
     return 0;
 }

@@ -8,15 +8,19 @@
 #pragma once
 
 #include <functional>
+#include <string>
 class EventLoop;
 class Socket;
 class Channel;
+class Buffer;
 
 class Connection {
     EventLoop *loop;
     Socket *sock;
-    Channel *channel;
+    Channel *channel = nullptr;
     std::function<void(Socket*)> deleteConnectionCallBack;
+    std::string *inBuffer ;
+    Buffer *readBuffer = nullptr; // 读缓冲
 public:
     Connection(EventLoop* _loop, Socket* _sock);
     ~Connection();

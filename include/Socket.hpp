@@ -30,6 +30,7 @@ public:
     void listen();
     void setNonblocking();
     int accept(InetAddress* _addr);
+    void connect(InetAddress* _addr);
     int get_fd() const;
 };
 
