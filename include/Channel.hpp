@@ -17,6 +17,9 @@ public:
     Channel(EventLoop *_loop, int _fd) : loop(_loop), fd(_fd) {};
     ~Channel() {};
 
+    Channel(const Channel&) = delete;
+    Channel operator=(const Channel&) = delete;
+    
     void enableReading();
 
     int getFd() const;

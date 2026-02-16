@@ -15,6 +15,10 @@ public:
     Epoll();
     ~Epoll();
     
+    // 管理 epoll 禁止拷贝
+    Epoll(const Epoll&) = delete;
+    Epoll operator=(const Epoll&) = delete;
+
     std::vector<Channel*> poll(int timeout = -1);
     void updateChannel(Channel* channel);
 };

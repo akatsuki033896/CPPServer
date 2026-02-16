@@ -25,6 +25,10 @@ public:
             fd = -1;
         }
     }
+    
+    // 管理套接字资源，禁止拷贝
+    Socket(const Socket&) = delete;
+    Socket& operator=(const Socket&) = delete;
 
     void bind(InetAddress* server_addr);
     void listen();

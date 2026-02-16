@@ -25,6 +25,9 @@ public:
     Connection(EventLoop* _loop, Socket* _sock);
     ~Connection();
     
+    Connection(const Connection&) = delete;
+    Connection operator=(const Connection&) = delete;
+
     void echo(int sockfd);
     void setDeleteConnectionCallBack(std::function<void(Socket*)> _cb);
 };

@@ -35,7 +35,7 @@ Acceptor::~Acceptor() {
 void Acceptor::acceptConnection() {
     InetAddress *clnt_addr = new InetAddress(); // TODO: change to unique_ptr
     Socket *clnt_sock = new Socket(sock->accept(clnt_addr));
-    std::cout << std::format("New Client {}, IP: {}, port: {}", clnt_sock->get_fd(), inet_ntoa(clnt_addr->getAddr().sin_addr), ntohs(clnt_addr->getAddr().sin_port)) << '\n'; // TODO: 地址和端口显示0.0.0.0
+    std::cout << std::format("New Client {}, IP: {}, port: {}", clnt_sock->get_fd(), inet_ntoa(clnt_addr->getAddr().sin_addr), ntohs(clnt_addr->getAddr().sin_port)) << '\n';
     clnt_sock->setNonblocking();
     newConnectionCallBack(clnt_sock);
     delete clnt_addr;

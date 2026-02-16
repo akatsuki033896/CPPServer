@@ -14,6 +14,11 @@ class Acceptor {
 public:
     Acceptor(EventLoop *_loop);
     ~Acceptor();
+
+    // 原则上只能有一个，禁止拷贝
+    Acceptor(const Acceptor&) = delete;
+    Acceptor operator=(const Acceptor&) = delete;
+    
     void acceptConnection();
     void setNewConnectionCallBack(std::function<void(Socket*)> cb);
 };
