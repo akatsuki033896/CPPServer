@@ -1,7 +1,6 @@
 #include "ThreadPool.hpp"
 #include <functional>
 #include <mutex>
-#include <stdexcept>
 #include <thread>
 
 ThreadPool::ThreadPool(int size) {
@@ -43,13 +42,15 @@ ThreadPool::~ThreadPool() {
     }
 }
 
-void ThreadPool::add(std::function<void()> func) {
-    {
-        std::unique_lock<std::mutex> lock(tasks_mtx);
-        if (stop) {
-            throw std::runtime_error("ThreadPool already stop, can't add task any more");
-        }
-        tasks.emplace(func);
-    }
-    cv.notify_one();
-}
+// 原添加任务队列的函数只支持void()，且存在拷贝
+
+// void ThreadPool::add(std::function<void()> func) {
+//     {
+//         std::unique_lock<std::mutex> lock(tasks_mtx);
+//         if (stop) {
+//             throw std::runtime_error("ThreadPool already stop, can't add task any more");
+//         }
+//         tasks.emplace(func);
+//     }
+//     cv.notify_one();
+// }
