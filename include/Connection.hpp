@@ -30,4 +30,5 @@ public:
 
     void echo(int sockfd);
     void setDeleteConnectionCallBack(std::function<void(Socket*)> _cb);
+    void send(int sockfd);
 };

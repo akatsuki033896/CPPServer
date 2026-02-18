@@ -11,7 +11,7 @@ void Buffer::append(const char* _str, int _size) {
     }
 }
 
-ssize_t Buffer::size() const {
+size_t Buffer::size() const {
     return buf.size();
 }
 

@@ -20,5 +20,6 @@ public:
     Epoll operator=(const Epoll&) = delete;
 
     std::vector<Channel*> poll(int timeout = -1);
-    void updateChannel(Channel* channel);
+    void updateChannel(Channel*);
+    void deleteChannel(Channel*);
 };

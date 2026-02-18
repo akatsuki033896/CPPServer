@@ -2,10 +2,12 @@
 #include "Channel.hpp"
 #include "Socket.hpp"
 #include "Buffer.hpp"
+#include <cerrno>
 #include <functional>
 #include <iostream>
 #include <format>
 #include <cstring>
+#include <sys/types.h>
 #include <unistd.h>
 
 #define READ_BUFFER_SIZE 1024
@@ -15,12 +17,14 @@ Connection::Connection(EventLoop* _loop, Socket* _sock) : loop(_loop), sock(_soc
     // std::function<void()> cb = std::bind(&Connection::echo, this, sock->get_fd());
     // channel->setCallback(cb);
     // TODO: change std::bind to lambda
-    channel->setCallback(
+    channel->enableReading();
+    channel->useET();
+    channel->setReadCallback(
         [this] () {
             this->echo(sock->get_fd());
         }
     );
-    channel->enableReading();
+    channel->setUseThreadPool(true);
     inBuffer = new std::string();
     readBuffer = new Buffer();
 }
@@ -28,6 +32,7 @@ Connection::Connection(EventLoop* _loop, Socket* _sock) : loop(_loop), sock(_soc
 Connection::~Connection() {
     delete channel;
     delete sock;
+    delete readBuffer;
 }
 
 void Connection::echo(int sockfd) {
@@ -46,9 +51,9 @@ void Connection::echo(int sockfd) {
         } 
         // 非阻塞IO，这个条件表示数据全部读取完毕
         else if (read_bytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            std::cout << std::format("Finished reading from client {}. No more data to read.", sockfd) << '\n';
             std::cout << std::format("Received from client {}: {}", sockfd, readBuffer->c_str()) << '\n';
-            errif(write(sockfd, readBuffer->c_str(), readBuffer->size()) == -1, "Socket write error");
+            // errif(write(sockfd, readBuffer->c_str(), readBuffer->size()) == -1, "Socket write error");
+            send(sockfd);
             readBuffer->clear();
             break; // no more data to read
         }
@@ -58,9 +63,29 @@ void Connection::echo(int sockfd) {
             deleteConnectionCallBack(sock);
             break;
         }
+        else {
+            std::cout << "Connect reset by peer." << '\n';
+            deleteConnectionCallBack(sock);
+            break;
+        }
     }
 }
 
 void Connection::setDeleteConnectionCallBack(std::function<void(Socket*)> _cb) {
     deleteConnectionCallBack = _cb;
+}
+
+void Connection::send(int sockfd) {
+    char buf[readBuffer->size()]; // FIXME: readBuffer->size() 不是编译期常量，buf 变成 VLA
+    strcpy(buf, readBuffer->c_str());
+    
+    int data_size = readBuffer->size();
+    int data_left = data_size;
+    while (data_left > 0) {
+        ssize_t byte_write = write(sockfd, buf + data_size - data_left, data_left);
+        if (byte_write == -1 && errno == EAGAIN) {
+            break;
+        }
+        data_left -= byte_write;
+    }
 }

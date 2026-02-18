@@ -41,7 +41,6 @@ int main() {
             if (read_bytes > 0) {
                 readBuffer->append(buf, read_bytes);
                 already_read += read_bytes;
-                std::cout << "Received from server: " << buf << '\n';
             }
             else if (read_bytes == 0) {
                 std::cout << "Server closed the connection." << '\n';

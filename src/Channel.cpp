@@ -1,10 +1,7 @@
 #include "Channel.hpp"
 #include "EventLoop.hpp"
-
-void Channel::enableReading() {
-    events = EPOLLIN | EPOLLET; // 监听可读事件，使用边缘触发模式
-    loop->updateChannel(this); // 将当前Channel对象添加到事件循环中
-}
+#include <cstdint>
+#include <sys/epoll.h>
 
 int Channel::getFd() const {
     return fd;
@@ -14,26 +11,55 @@ uint32_t Channel::getEvents() const {
     return events;
 }
 
-uint32_t Channel::getRevents() const {
-    return revents;
-}
-
 bool Channel::getInEpoll() const {
     return inEpoll;
 }
 
-void Channel::setInEpoll() {
-    inEpoll = true;
+uint32_t Channel::getReady() const {
+    return ready;
 }
 
-void Channel::setRevents(uint32_t _revents) {
-    revents = _revents;
+void Channel::setInEpoll(bool _in) {
+    inEpoll = _in;
 }
 
-void Channel::setCallback(std::function<void()> _cb) {
-    callback = _cb;
+void Channel::setReady(uint32_t _ev) {
+    ready = _ev;
+}
+
+void Channel::setReadCallback(std::function<void()> _cb) {
+    read_callback = _cb;
 }
 
 void Channel::handleEvent() {
-    callback(); // 调用回调函数处理事件
+    if (ready & (EPOLLIN | EPOLLPRI)) {
+        if (useThreadPool) {
+            loop->addThread(read_callback);
+        }
+        else {
+            read_callback();
+        }
+    }
+    if (ready & (EPOLLOUT)) {
+        if (useThreadPool) {
+            loop->addThread(write_callback);
+        }
+        else {
+            write_callback();
+        }
+    }
+}
+
+void Channel::enableReading() {
+    events |= EPOLLIN | EPOLLPRI; // 监听可读事件，使用边缘触发模式
+    loop->updateChannel(this); // 将当前Channel对象添加到事件循环中
+}
+
+void Channel::useET() {
+    events |= EPOLLET;
+    loop->updateChannel(this);
+}
+
+void Channel::setUseThreadPool(bool use) {
+    useThreadPool = use;
 }

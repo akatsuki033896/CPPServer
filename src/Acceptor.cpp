@@ -12,18 +12,19 @@ Acceptor::Acceptor(EventLoop *_loop) : loop(_loop) {
     InetAddress* addr = new InetAddress("127.0.0.1", 8888); // TODO: change to unique_ptr
     sock->bind(addr);
     sock->listen();
-    sock->setNonblocking();
+    // sock->setNonblocking();
     accept_channel = new Channel(loop, sock->get_fd());
     
     // std::function<void()> cb = std::bind(&Acceptor::acceptConnection, this);
-
     // accept_channel -> setCallback(cb);
-    accept_channel -> setCallback(
+
+    accept_channel -> setReadCallback(
         [this]() {
             acceptConnection();
         }
     );
     accept_channel -> enableReading(); // 监听socket的Channel只需要关注可读事件
+    accept_channel -> setUseThreadPool(false); // 不使用线程池减少开销
     delete addr;
 }
 

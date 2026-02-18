@@ -7,10 +7,12 @@
 
 EventLoop::EventLoop() {
     ep = new Epoll();
+    threadPool = new ThreadPool();
 }
 
 EventLoop::~EventLoop() {
     delete ep;
+    delete threadPool;
 }
 
 void EventLoop::loop() {
