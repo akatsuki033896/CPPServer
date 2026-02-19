@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -8,10 +9,11 @@
 #include "InetAddress.hpp"
 #include "Buffer.hpp"
 #include "Socket.hpp"
+#include "ThreadPool.hpp"
 
 #define BUFFER_SIZE 1024
 
-int main() {
+void client(int msgs, int wait) {
     Socket *sock = new Socket();
     InetAddress *addr = new InetAddress("127.0.0.1", 8888);
     sock->connect(addr);
@@ -21,13 +23,13 @@ int main() {
     Buffer *sendBuffer = new Buffer();
     Buffer *readBuffer = new Buffer();
 
-    while (true) {
-        std::cout << "Enter message to send (type 'q' to quit): ";
-        sendBuffer->getline(); // 从标准输入读取一行数据到缓冲区
+    sleep(wait);
+    int count = 0;
+
+    while (count < msgs) {
+        // std::cout << "Enter message to send (type 'q' to quit): ";
+        sendBuffer->setBuf("I'm client."); // 从标准输入读取一行数据到缓冲区
         ssize_t write_bytes = write(sockfd, sendBuffer->c_str(), sendBuffer->size()); // 将缓冲区数据写入socket
-        if (strcmp(sendBuffer->c_str(), "q") == 0) {
-            break;
-        }
         if (write_bytes == -1) {
             std::cout << "Socket already disconnected." << '\n';
             break;
@@ -54,10 +56,21 @@ int main() {
         }
         readBuffer->clear();
     }
-    
-    delete sendBuffer;
-    delete readBuffer;
     delete addr;
     delete sock;
+    return;
+}
+
+int main(int argc, char* argv[]) {
+    int threads = 100;
+    
+    ThreadPool* poll = new ThreadPool(threads);
+    std::function<void()> func = [] () {
+        client(100, 0); // msgs = 100, wait = 0
+    };
+    for (int i = 0; i < threads; i++) {
+        poll->add(func);
+    }
+    delete poll;
     return 0;
 }

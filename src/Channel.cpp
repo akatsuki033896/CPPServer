@@ -33,20 +33,10 @@ void Channel::setReadCallback(std::function<void()> _cb) {
 
 void Channel::handleEvent() {
     if (ready & (EPOLLIN | EPOLLPRI)) {
-        if (useThreadPool) {
-            loop->addThread(read_callback);
-        }
-        else {
-            read_callback();
-        }
+        read_callback();
     }
     if (ready & (EPOLLOUT)) {
-        if (useThreadPool) {
-            loop->addThread(write_callback);
-        }
-        else {
-            write_callback();
-        }
+        write_callback();
     }
 }
 

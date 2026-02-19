@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -9,22 +10,23 @@ class Connection;
 class ThreadPool;
 
 class Server {
-    EventLoop *mainReactor; //只负责接受连接，然后分发给一个subReactor
-    std::vector<EventLoop*> subReactors; //负责处理事件循环
-    Acceptor *acceptor = nullptr;
-    std::map<int, Connection*> connections; // 所有 TCP 连接
-    ThreadPool *thpool;
+    EventLoop* main_reactor_; //只负责接受连接，然后分发给一个subReactor
+    std::vector<EventLoop*> sub_reactors_; //负责处理事件循环
+    Acceptor* acceptor_ = nullptr;
+    std::map<int, Connection*> connections_; // 所有 TCP 连接
+    ThreadPool* thread_pool_ = nullptr;
+    std::function<void(Connection*)> on_connect_callback_;
 public:
-    Server(EventLoop*);
+    explicit Server(EventLoop*);
     ~Server();
 
     // 原则上只能有一个，禁止拷贝
     Server(const Server&) = delete;
     Server operator=(const Server&) = delete;
     
-    void handleReadEvent(int);
-    void newConnection(Socket *sock); // 添加新建TCP连接，创建一个新的Channel对象并将其添加到事件循环中
-    void deleteConnection(Socket *sock); // 断开TCP连接
+    void newConnection(Socket*); // 添加新建TCP连接，创建一个新的Channel对象并将其添加到事件循环中
+    void deleteConnection(Socket*); // 断开TCP连接
+    void onConnect(std::function<void(Connection*)>);
 };
 
 // Dependencies: Channel -> Epoll -> EventLoop -> Server

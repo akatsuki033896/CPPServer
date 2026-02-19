@@ -8,27 +8,61 @@
 #pragma once
 
 #include <functional>
-#include <string>
 class EventLoop;
 class Socket;
 class Channel;
 class Buffer;
 
 class Connection {
-    EventLoop *loop;
-    Socket *sock;
-    Channel *channel = nullptr;
-    std::function<void(Socket*)> deleteConnectionCallBack;
-    std::string *inBuffer ;
-    Buffer *readBuffer = nullptr; // 读缓冲
+    EventLoop *loop_;
+    Socket *sock_;
+    Channel *channel_ = nullptr;
+    Buffer *read_buffer_ = nullptr; // 读缓冲
+    Buffer *send_buffer_ = nullptr; // 写缓冲
+
+    // 回调函数
+    std::function<void(Socket*)> delete_connection_call_back_;
+    std::function<void(Connection*)> on_connection_call_back_;
+
+    void ReadNonBlocking();
+    void WriteNonBlocking();
+    // void ReadBlocking();
+    // void WriteBlocking();
 public:
-    Connection(EventLoop* _loop, Socket* _sock);
+    Connection(EventLoop*, Socket*);
     ~Connection();
     
     Connection(const Connection&) = delete;
     Connection operator=(const Connection&) = delete;
 
-    void echo(int sockfd);
-    void setDeleteConnectionCallBack(std::function<void(Socket*)> _cb);
-    void send(int sockfd);
+    // 对于将服务器内容发送回客户端的 echo 要支持自定义，同时应该被 Server 直接管理
+    // void echo(int sockfd);
+    
+    Buffer* getReadBuffer() const;
+    const char *readBuffer();
+    
+    Buffer* getSendBuffer() const;
+    void setSendBuffer(const char*);
+    const char *sendBuffer();
+    void getlineSendBuffer();
+
+    Socket* getSocket() const;
+
+    enum State {
+        Invalid = 1,
+        HandShaking,
+        Connected,
+        Closed,
+        Failed
+    };
+    // 状态
+    State state_ = State::Invalid;
+    State getState() const;
+
+    void Read();
+    void Write();
+    void onConnect(std::function<void()>); // 自定义业务
+    void setDeleteConnectionCallBack(std::function<void(Socket*)> const&);
+    void setOnConnectionCallBack(std::function<void(Connection*)> const&);
+    void Close();
 };

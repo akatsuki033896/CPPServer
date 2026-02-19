@@ -3,7 +3,7 @@
 #include <string>
 
 class Buffer {
-    std::string buf;
+    std::string buf_;
 public:
     Buffer() {};
     ~Buffer() {};
@@ -12,4 +12,5 @@ public:
     const char* c_str() const;
     void clear();
     void getline();
+    void setBuf(const char*);
 };
