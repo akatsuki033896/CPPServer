@@ -1,34 +1,26 @@
 #include "EventLoop.hpp"
-#include "Epoll.hpp"
+#include "Epoller.hpp"
 #include "Channel.hpp"
-#include "ThreadPool.hpp"
-#include <functional>
-#include <vector>
+#include <memory>
 
 EventLoop::EventLoop() {
-    ep = new Epoll();
-    threadPool = new ThreadPool();
+    poller_ = std::make_unique<Epoller>();
 }
 
-EventLoop::~EventLoop() {
-    delete ep;
-    delete threadPool;
-}
+EventLoop::~EventLoop() {}
 
 void EventLoop::loop() {
-    while (!quit) {
-        std::vector<Channel*> chs;
-        chs = ep->poll(); // 获取活跃的Channel列表
-        for (auto it = chs.begin(); it != chs.end(); it++) {
-            (*it)->handleEvent(); // 处理每个活跃的Channel事件
+    while (true) {
+        for (Channel* active_ch : poller_->poll()) {
+            active_ch->handleEvent();
         }
     }
 }
 
-void EventLoop::updateChannel(Channel* channel) {
-    ep->updateChannel(channel);
+void EventLoop::updateChannel(Channel* channel) const {
+    poller_->updateChannel(channel);
 }
 
-void EventLoop::addThread(std::function<void()> func) {
-    threadPool->add(func);
+void EventLoop::deleteChannel(Channel* channel) const {
+    poller_->deleteChannel(channel);
 }

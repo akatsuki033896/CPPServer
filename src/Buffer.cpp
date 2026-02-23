@@ -1,6 +1,5 @@
 #include "Buffer.hpp"
 #include <string>
-#include <iostream>
 
 void Buffer::append(const char* _str, int _size) {
     for (int i = 0; i < _size; i++) {
@@ -11,7 +10,7 @@ void Buffer::append(const char* _str, int _size) {
     }
 }
 
-size_t Buffer::size() const {
+size_t Buffer::getSize() const {
     return buf_.size();
 }
 
@@ -21,11 +20,6 @@ const char* Buffer::c_str() const {
 
 void Buffer::clear() {
     buf_.clear();
-}
-
-void Buffer::getline() {
-    buf_.clear();
-    std::getline(std::cin, buf_);
 }
 
 void Buffer::setBuf(const char* str) {

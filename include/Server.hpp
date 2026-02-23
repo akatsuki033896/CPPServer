@@ -1,32 +1,32 @@
 #pragma once
+#include "common.hpp"
 #include <functional>
-#include <map>
+#include <memory>
 #include <vector>
 
-class EventLoop;
-class Socket;
-class Acceptor;
-class Connection;
-class ThreadPool;
-
 class Server {
-    EventLoop* main_reactor_; //只负责接受连接，然后分发给一个subReactor
-    std::vector<EventLoop*> sub_reactors_; //负责处理事件循环
-    Acceptor* acceptor_ = nullptr;
-    std::map<int, Connection*> connections_; // 所有 TCP 连接
-    ThreadPool* thread_pool_ = nullptr;
-    std::function<void(Connection*)> on_connect_callback_;
-public:
-    explicit Server(EventLoop*);
-    ~Server();
+    std::unique_ptr<EventLoop> main_reactor_; //只负责接受连接，然后分发给一个subReactor
+    int next_conn_id_ = 0; // 连接ID生成器
 
-    // 原则上只能有一个，禁止拷贝
-    Server(const Server&) = delete;
-    Server operator=(const Server&) = delete;
+    std::unique_ptr<Acceptor> acceptor_; // 负责监听新连接的Acceptor对象
+    std::vector<std::unique_ptr<EventLoop>> sub_reactors_; //负责处理事件循环
+
+    std::unordered_map<int, TCPConnection*> connections_map_; // 所有 TCP 连接
+    std::unique_ptr<ThreadPool> thread_pool_;
     
-    void newConnection(Socket*); // 添加新建TCP连接，创建一个新的Channel对象并将其添加到事件循环中
-    void deleteConnection(Socket*); // 断开TCP连接
-    void onConnect(std::function<void(Connection*)>);
+    std::function<void(TCPConnection*)> on_connect_;
+    std::function<void(TCPConnection*)> on_message_;
+public:
+    DISALLOW_COPY_AND_MOVE(Server);
+    Server(const char* ip, const int port);
+    ~Server();
+    
+    void start();
+    void setConnectionCallBack(std::function<void(TCPConnection*)> const&);
+    void setMessageCallBack(std::function<void(TCPConnection*)> const&);
+
+    void handleClose(int);
+    void handleNewConnection(int); // 添加新建TCP连接，创建一个新的Channel对象并将其添加到事件循环中
 };
 
 // Dependencies: Channel -> Epoll -> EventLoop -> Server

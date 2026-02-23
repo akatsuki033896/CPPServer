@@ -2,26 +2,18 @@
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
-#include "Socket.hpp"
-#include "Connection.hpp"
-#include "include/EventLoop.hpp"
-#include "include/Server.hpp"
+#include "TCPConnection.hpp"
+#include "Server.hpp"
+#include "Buffer.hpp"
+
 // Cmake找得到 "EventLoop.cpp" Clangd只能找到 "include/EventLoop.cpp"
 int main() {
-    EventLoop *loop = new EventLoop();
-    Server *server = new Server(loop);
-    server->onConnect([] (Connection *conn) {
-        conn->Read();
-        if (conn->getState() == Connection::State::Closed) {
-            conn->Close();
-             return;
-        }
-        std::cout << "Message from client: " << conn->getSocket()->get_fd() << ":" << conn->readBuffer() << '\n';
-        conn->setSendBuffer(conn->readBuffer());
-        conn->Write();
+    Server *server = new Server("127.0.0.1", 8080);
+    server->setMessageCallBack([] (TCPConnection *conn) {
+        std::cout << "Message from client: " << conn->id() << ":" << conn->read_buff() << '\n';
+        conn->Send(conn->read_buff()->c_str()); // 回显
     });
-    loop->loop(); // 启动事件循环
+    server->start();
     delete server;
-    delete loop;
     return 0;
 }

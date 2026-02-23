@@ -1,47 +1,63 @@
 #include "Acceptor.hpp"
 #include "EventLoop.hpp"
-#include "InetAddress.hpp"
-#include "Socket.hpp"
 #include "Channel.hpp"
+#include <cassert>
 #include <cstdio>
-#include <format>
-#include <iostream>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include "util.hpp"
 
-Acceptor::Acceptor(EventLoop *_loop) : loop(_loop) {
-    sock = new Socket();
-    InetAddress* addr = new InetAddress("127.0.0.1", 8888); // TODO: change to unique_ptr
-    sock->bind(addr);
-    sock->listen();
-    // sock->setNonblocking();
-    accept_channel = new Channel(loop, sock->get_fd());
-    
-    // std::function<void()> cb = std::bind(&Acceptor::acceptConnection, this);
-    // accept_channel -> setCallback(cb);
-
-    accept_channel -> setReadCallback(
+Acceptor::Acceptor(EventLoop *loop, const char *ip, const int port) : loop_(loop), listen_fd_(-1){
+    createSocket();
+    bindSocket(ip, port);
+    listenSocket();
+    accept_channel_ = std::make_unique<Channel>(loop, listen_fd_); // 构造
+    accept_channel_ -> setReadCallback(
         [this]() {
             acceptConnection();
         }
     );
-    accept_channel -> enableReading(); // 监听socket的Channel只需要关注可读事件
-    accept_channel -> setUseThreadPool(false); // 不使用线程池减少开销
-    delete addr;
+    accept_channel_ -> enableReading(); // 监听socket的Channel只需要关注可读事件
 }
 
 Acceptor::~Acceptor() {
-    delete sock;
-    delete accept_channel;
+    loop_->deleteChannel(accept_channel_.get());
+    ::close(listen_fd_);
+}
+
+void Acceptor::createSocket() {
+    assert(listen_fd_ == -1);
+    listen_fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
+    errif(listen_fd_ == -1, "socket error");
+}
+
+void Acceptor::bindSocket(const char* ip, const int port) {
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip);
+    addr.sin_port = htons(port);
+    errif(::bind(listen_fd_, (struct sockaddr*)&addr, sizeof(addr)) == -1, "bind error");
+}
+
+void Acceptor::listenSocket() {
+    assert(listen_fd_ == -1);
+    errif(::listen(listen_fd_, SOMAXCONN) < 0, "listen error");
 }
 
 void Acceptor::acceptConnection() {
-    InetAddress *clnt_addr = new InetAddress(); // TODO: change to unique_ptr
-    Socket *clnt_sock = new Socket(sock->accept(clnt_addr));
-    std::cout << std::format("New Client {}, IP: {}, port: {}", clnt_sock->get_fd(), inet_ntoa(clnt_addr->getAddr().sin_addr), ntohs(clnt_addr->getAddr().sin_port)) << '\n';
-    clnt_sock->setNonblocking();
-    newConnectionCallBack(clnt_sock);
-    delete clnt_addr;
+    struct sockaddr_in clnt_addr;
+    socklen_t clnt_len = sizeof(clnt_addr);
+    assert(listen_fd_ == -1);
+    int clnt_sockfd = ::accept4(listen_fd_, (struct sockaddr*)&clnt_addr, &clnt_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    errif(clnt_sockfd == -1, "accept error");
+
+    if (new_connection_callback_) {
+        new_connection_callback_(clnt_sockfd);
+    }
 }
 
-void Acceptor::setNewConnectionCallBack(std::function<void(Socket*)> _cb) {
-    newConnectionCallBack = _cb;
+void Acceptor::setNewConnectionCallBack(std::function<void(int)> const& callback) {
+    new_connection_callback_ = std::move(callback);
 }

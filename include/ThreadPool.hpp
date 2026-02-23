@@ -31,7 +31,7 @@ public:
     
     // 使用右值移动、完美转发等阻止拷贝，使用模板往任务队列添加不同类型的函数
     template<class F, class... Args>
-    auto add(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>> {
+    auto addTask(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>> {
         
         // using return_type = typename std::result_of<T(Args...)>::type; // 返回值类型     
         // auto task = std::make_shared<std::packaged_task<return_type()> > (
